@@ -1,32 +1,84 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
-const hre = require("hardhat");
+const { ethers, network, hardhat } = require("hardhat");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const { formatEther, parseEther } = ethers.utils;
+  const [deployer] = await ethers.getSigners();
+  const AaveContract = await ethers.getContractFactory("Aave");
+  const aaveContract = await AaveContract.deploy();
+  await aaveContract.deployed();
 
-  const lockedAmount = hre.ethers.utils.parseEther("0.001");
+  console.log("AaveContract deployed to:", aaveContract.address);
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  const TokenBalance = await aaveContract.getBalance(deployer.address);
+  console.log("Token Balance:", TokenBalance.toString());
+  const TokenBalance1 = await aaveContract.getBalance(
+    "0x41CfD383011a136FBc3E58b932F1F5EBdcC58bf2"
+  );
+  console.log("Token Balance1:", formatEther(TokenBalance1.toString()));
 
-  await lock.deployed();
+  const LendingPoolAddress = await aaveContract.getLendingPoolAddress();
+  console.log("Lending Pool Address:", LendingPoolAddress);
+
+  const EthBalanceOfDeployer = await ethers.provider.getBalance(
+    deployer.address
+  );
+  console.log(
+    "ETH Balance of Deployer before staking:",
+    formatEther(EthBalanceOfDeployer.toString())
+  );
+
+  const stakeEth = await aaveContract
+    .connect(deployer)
+    .stakeEth({ value: parseEther("5") });
+  console.log("Stake ETH:", !!stakeEth?.hash);
+
+  const EthBalanceOfDeployerAfterStaking = await ethers.provider.getBalance(
+    deployer.address
+  );
+  console.log(
+    "ETH Balance of Deployer after staking:",
+    formatEther(EthBalanceOfDeployerAfterStaking.toString())
+  );
+
+  const ATokenBalance = await aaveContract.getBalance(aaveContract.address);
+  console.log("AToken Balance:", formatEther(ATokenBalance.toString()));
+
+  // const approve = await aaveContract.connect(deployer).approveToken(parseEther("2"));
+
+  // console.log("Approve:", !!approve?.hash);
+
+  const allowance = await aaveContract.allowance();
+  console.log("Allowance:", formatEther(allowance.toString()));
+
+  const EthBalanceOfSampleBeforeWithdraw = await ethers.provider.getBalance(
+    aaveContract.address
+  );
 
   console.log(
-    `Lock with ${ethers.utils.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
+    "ETH Balance of Contract before withdraw:",
+    formatEther(EthBalanceOfSampleBeforeWithdraw.toString())
+  );
+
+  const withdrawEth = await aaveContract
+    .connect(deployer)
+    .withdrawEth(parseEther("1"));
+
+  console.log("Withdraw ETH:", !!withdrawEth?.hash);
+
+  const EthBalanceOfSampleAfterWithdraw = await ethers.provider.getBalance(
+    aaveContract.address
+  );
+
+  console.log(
+    "ETH Balance of Contract after withdraw:",
+    formatEther(EthBalanceOfSampleAfterWithdraw.toString())
   );
 }
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+// Run the deployment script
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
