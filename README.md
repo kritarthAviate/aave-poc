@@ -2,7 +2,7 @@
 
 View contract on [Goerli Etherscan](https://goerli.etherscan.io/address/0x45bF4e99eEe2e52823443fe5B5544782Fe7b4FfC#code). Integrates AAVE V2 contract to deposit and withdraw ETH using WETH Gateway.
 
-[Github repo link to frontend](https://github.com/kritarthAviate/aave-frontend)
+[Github repo link to frontend](https://github.com/kritarthAviate/aave-frontend-poc)
 
 ## Set up
 
